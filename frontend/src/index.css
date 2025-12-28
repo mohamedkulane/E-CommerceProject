@@ -5,3 +5,66 @@
 body{
     font-family: 'Roboto';
 }
+
+/* Add to your global CSS file */
+.focus\:ring-2:focus {
+    --tw-ring-color: #1B5E20;
+    border-color: #1B5E20;
+}
+
+.border-custom-green {
+    border-color: #1B5E20;
+}
+
+.bg-custom-orange {
+    background-color: #FF9800;
+}
+
+.bg-custom-orange:hover {
+    background-color: #F57C00;
+}
+
+.text-custom-green {
+    color: #1B5E20;
+}
+
+/* Add these styles to your global CSS file */
+
+/* Smooth transitions */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Custom scrollbar for sidebar */
+aside::-webkit-scrollbar {
+  width: 5px;
+}
+
+aside::-webkit-scrollbar-track {
+  background: #1B5E20;
+}
+
+aside::-webkit-scrollbar-thumb {
+  background: #FF9800;
+  border-radius: 4px;
+}
+
+aside::-webkit-scrollbar-thumb:hover {
+  background: #FFB74D;
+}
+
+/* Animation for menu items */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+nav div {
+  animation: slideIn 0.3s ease-out;
+}

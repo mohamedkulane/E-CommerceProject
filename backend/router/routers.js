@@ -1,14 +1,17 @@
-const express=require("express")
-const uploadImage=require("../middleware/uploadimage")
-const PostController=require("../controller/contrlles")
+const express = require("express")
+const uploadImage = require("../middleware/uploadimage")
+const PostController = require("../controller/contrlles")
+const { verifyToken, verifyAdmin } = require("../middleware/verifyToken")
 
-const router=express.Router()
+const router = express.Router()
 
-router.post("/create/ProductPost", uploadImage.single("img"), PostController.Postproduct)
+// Public routes
 router.get("/read/ProductPost", PostController.ReadProduct)
-router.delete("/delete/ProductPost/:id", PostController.deletProduct)
 router.get("/readSingle/ProductPost/:id", PostController.readSingleData)
-router.put("/update/ProductPost/:id", uploadImage.single("img"), PostController.updateData)
 
+// Admin only routes
+router.post("/create/ProductPost", verifyToken, verifyAdmin, uploadImage.single("img"), PostController.Postproduct)
+router.delete("/delete/ProductPost/:id", verifyToken, verifyAdmin, PostController.deletProduct)
+router.put("/update/ProductPost/:id", verifyToken, verifyAdmin, uploadImage.single("img"), PostController.updateData)
 
-module.exports=router
+module.exports = router
