@@ -1,59 +1,35 @@
 // src/components/ProtectedRoute.jsx
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from "react-router-dom"
 
-const ProtectedRoute = ({ children, adminOnly = false }) => {
-    // Ka soo qaad xogta localStorage
-    const xogtaMacmiilka = localStorage.getItem("customer");
-    const xogtaAdmin = localStorage.getItem("Admin");
+function ProtectedRoute({ children, adminOnly = false }) {
+    const location = useLocation()
     
-    console.log("=== 🔍 PROTECTED ROUTE HUBIN === ");
-    console.log("1. Xogta macmiilka:", xogtaMacmiilka ? "✓ Jira" : "✗ Ma jiro");
-    console.log("2. Xogta admin-ka:", xogtaAdmin ? "✓ Jira" : "✗ Ma jiro");
-    
-    // Haddii aan login-san
-    if (!xogtaMacmiilka && !xogtaAdmin) {
-        console.log("⚠️ Qofkaan login-san, login page loo wadi");
-        return <Navigate to="/login" />;
-    }
-    
-    // Haddii dashboard-ka admin-ka loo baahan yahay
+    // Haddii adminOnly = true (Dashboard)
     if (adminOnly) {
-        // Haddii xogta admin-ka aan la helin
-        if (!xogtaAdmin) {
-            console.log("⚠️ Xogta admin-ka ma jiro, laakiin macmiil waa login-garay");
-            return <Navigate to="/login?error=admin_required" />;
+        const adminData = localStorage.getItem("Admin")
+        
+        if (!adminData) {
+            // Ma admin ahayn, login page u gudbi
+            return <Navigate to="/login?error=admin_required" state={{ from: location }} replace />
         }
         
         try {
-            const adminData = JSON.parse(xogtaAdmin);
-            console.log("👤 Xogta admin-ka la hubinayo:", adminData);
+            const parsedAdmin = JSON.parse(adminData)
+            const userRole = parsedAdmin.Admin?.role || parsedAdmin.role
             
-            // Hubi in token jiro
-            if (!adminData.token) {
-                console.log("❌ Token ma jiro");
-                return <Navigate to="/login" />;
+            if (userRole !== "admin") {
+                localStorage.removeItem("Admin")
+                return <Navigate to="/login?error=not_admin" state={{ from: location }} replace />
             }
             
-            // Hubi role-ka admin-ka
-            const adminRole = adminData.Admin?.role || adminData.admin?.role || adminData.role;
-            console.log("🎭 Role-ka la helay:", adminRole);
-            
-            if (!adminRole || adminRole.toLowerCase() !== 'admin') {
-                console.log(`❌ Role-ka waa '${adminRole}', laakiin waa inuu noqdaa 'admin'`);
-                return <Navigate to="/login?error=not_admin" />;
-            }
-            
-            console.log("✅ Admin-ka xaqiijiyay! Dashboard-ka loo ogolaaday");
-            return children;
-            
+            return children
         } catch (error) {
-            console.error("❌ Khalad marka la fiirinayo xogta admin-ka:", error);
-            return <Navigate to="/login" />;
+            localStorage.removeItem("Admin")
+            return <Navigate to="/login" state={{ from: location }} replace />
         }
     }
     
-    // Haddii aan adminOnly ahayn (customer dashboard)
-    return children;
-};
+    return children
+}
 
-export default ProtectedRoute;
+export default ProtectedRoute

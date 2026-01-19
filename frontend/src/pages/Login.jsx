@@ -7,7 +7,6 @@ import "react-toastify/dist/ReactToastify.css"
 function Login() {
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
-    const [active, setActive] = useState("Customer")
     const [loading, setLoading] = useState(false)
     
     const navigate = useNavigate()
@@ -17,56 +16,70 @@ function Login() {
         const errorType = searchParams.get('error')
         
         if (errorType === 'admin_required') {
-            toast.warning("Admin access required! Please login as admin.")
-            setActive("Admin")
+            toast.warning("Admin access required! Please login with admin credentials.")
         }
         
         if (errorType === 'not_admin') {
-            toast.error("This account is not an admin! Please login with a valid admin account.")
-            setActive("Admin")
+            toast.error("You don't have admin privileges!")
         }
     }, [searchParams])
 
-    const handleInsert = async (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault()
         setLoading(true)
         
         try {
-            const URL = active === "Customer" 
-                ? "http://localhost:7000/login/customer" 
-                : "http://localhost:7000/login/admin"
-            
-            const response = await axios.post(URL, { email, password })
-            
-            if (active === "Customer") {
-                const customerData = {
-                    token: response.data.token,
-                    data: response.data.customer || response.data.Customer
-                };
+            // Isku day admin login marka hore
+            try {
+                const adminResponse = await axios.post("http://localhost:7000/login/admin", { 
+                    email, 
+                    password 
+                })
                 
-                localStorage.setItem("customer", JSON.stringify(customerData));
+                // Hubi in uu admin yahay
+                const adminRole = adminResponse.data.Admin?.role || 
+                                 adminResponse.data.admin?.role || 
+                                 adminResponse.data.role;
                 
-                toast.success("Customer login successful!")
-                setTimeout(() => navigate("/"), 1500)
-            } else {
-                const adminRole = response.data.Admin?.role || 
-                                 response.data.admin?.role || 
-                                 response.data.role;
-                
-                const adminData = {
-                    token: response.data.token,
-                    Admin: {
-                        name: response.data.Admin?.name || response.data.admin?.name,
-                        email: response.data.Admin?.email || response.data.admin?.email,
-                        role: adminRole || "admin"
-                    }
-                };
-                
-                localStorage.setItem("Admin", JSON.stringify(adminData));
-                
-                toast.success("Admin login successful!")
-                setTimeout(() => navigate("/dashboard"), 1500)
+                if (adminRole === "admin") {
+                    // Waa admin, Dashboard u gudbo
+                    const adminData = {
+                        token: adminResponse.data.token,
+                        Admin: {
+                            name: adminResponse.data.Admin?.name || adminResponse.data.admin?.name,
+                            email: adminResponse.data.Admin?.email || adminResponse.data.admin?.email,
+                            role: adminRole
+                        }
+                    };
+                    
+                    localStorage.setItem("Admin", JSON.stringify(adminData));
+                    localStorage.removeItem("customer"); // Hubi in customer session-ka la tirtiro
+                    
+                    toast.success("Admin login successful!")
+                    setTimeout(() => navigate("/dashboard"), 1500)
+                    return
+                }
+            } catch (adminError) {
+                // Admin login-ku khalad, sii wad customer login
             }
+            
+            // Hadii admin login-ku shaqayn, customer login isku day
+            const customerResponse = await axios.post("http://localhost:7000/login/customer", { 
+                email, 
+                password 
+            })
+            
+            const customerData = {
+                token: customerResponse.data.token,
+                data: customerResponse.data.customer || customerResponse.data.Customer
+            };
+            
+            localStorage.setItem("customer", JSON.stringify(customerData));
+            localStorage.removeItem("Admin"); // Hubi in admin session-ka la tirtiro
+            
+            toast.success("Customer login successful!")
+            setTimeout(() => navigate("/"), 1500)
+            
         } catch (error) {
             if (error.response?.status === 400) {
                 toast.error(error.response.data.error || "Invalid email or password.")
@@ -86,43 +99,12 @@ function Login() {
                         Sign in to your account
                     </h2>
                     <p className="mt-2 text-gray-600">
-                        Access your customer or admin dashboard
+                        Enter your credentials to access your account
                     </p>
                 </div>
                 
-                {/* Tab Selection */}
-                <div className="flex mb-8 bg-gray-100 rounded-xl p-1">
-                    <button
-                        onClick={() => setActive("Customer")}
-                        className={`flex-1 py-3 rounded-lg font-medium text-center transition-all duration-300 ${
-                            active === "Customer" 
-                                ? "bg-white shadow-md transform scale-[1.02]" 
-                                : "hover:bg-gray-50"
-                        }`}
-                        style={{ 
-                            color: active === "Customer" ? '#1B5E20' : '#666',
-                            fontWeight: active === "Customer" ? '600' : '500'
-                        }}
-                    >
-                        Customer
-                    </button>
-                    <button
-                        onClick={() => setActive("Admin")}
-                        className={`flex-1 py-3 rounded-lg font-medium text-center transition-all duration-300 ${
-                            active === "Admin" 
-                                ? "bg-white shadow-md transform scale-[1.02]" 
-                                : "hover:bg-gray-50"
-                        }`}
-                        style={{ 
-                            color: active === "Admin" ? '#1B5E20' : '#666',
-                            fontWeight: active === "Admin" ? '600' : '500'
-                        }}
-                    >
-                        Admin
-                    </button>
-                </div>
-                
-                <form className="space-y-6" onSubmit={handleInsert}>
+                {/* HAL FORM KA KELIYA */}
+                <form className="space-y-6" onSubmit={handleLogin}>
                     {/* Email Field */}
                     <div>
                         <label className="block text-sm font-medium mb-2" htmlFor="email" style={{ color: '#1B5E20' }}>
@@ -175,11 +157,11 @@ function Login() {
                         disabled={loading}
                         className="w-full rounded-lg px-4 py-3 text-white font-semibold text-lg transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
                         style={{ 
-                            backgroundColor: loading ? '#ccc' : '#FF9800',
-                            backgroundImage: loading ? 'none' : 'linear-gradient(to right, #FF9800, #F57C00)'
+                            backgroundColor: loading ? '#ccc' : '#1B5E20',
+                            backgroundImage: loading ? 'none' : 'linear-gradient(to right, #1B5E20, #2E7D32)'
                         }}
-                        onMouseOver={(e) => !loading && (e.target.style.backgroundImage = 'linear-gradient(to right, #F57C00, #E65100)')}
-                        onMouseOut={(e) => !loading && (e.target.style.backgroundImage = 'linear-gradient(to right, #FF9800, #F57C00)')}
+                        onMouseOver={(e) => !loading && (e.target.style.backgroundImage = 'linear-gradient(to right, #2E7D32, #388E3C)')}
+                        onMouseOut={(e) => !loading && (e.target.style.backgroundImage = 'linear-gradient(to right, #1B5E20, #2E7D32)')}
                     >
                         {loading ? (
                             <span className="flex items-center justify-center">
@@ -190,29 +172,21 @@ function Login() {
                                 Signing in...
                             </span>
                         ) : (
-                            `Sign in as ${active}`
+                            'Sign In'
                         )}
                     </button>
                     
                     {/* Registration Link */}
                     <div className="text-center pt-4 border-t border-gray-100">
                         <p className="text-sm text-gray-600">
-                            {active === "Customer" ? (
-                                <>
-                                    Don't have an account?{" "}
-                                    <a 
-                                        href="/customerRegis" 
-                                        className="font-semibold hover:underline transition-all duration-200"
-                                        style={{ color: '#1B5E20' }}
-                                    >
-                                        Register here
-                                    </a>
-                                </>
-                            ) : (
-                                <span className="text-gray-500 italic">
-                                    Admin accounts are pre-configured
-                                </span>
-                            )}
+                            Don't have an account?{" "}
+                            <a 
+                                href="/customerRegis" 
+                                className="font-semibold hover:underline transition-all duration-200"
+                                style={{ color: '#1B5E20' }}
+                            >
+                                Register here
+                            </a>
                         </p>
                     </div>
                 </form>

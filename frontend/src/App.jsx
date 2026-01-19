@@ -18,6 +18,7 @@ export default function App(){
   return (
     <div>
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/cart" element={<ShoppingCart />} />
         <Route path="/customerRegis" element={<Register />} />
@@ -25,7 +26,7 @@ export default function App(){
         <Route path="/contact" element={<Contact />} />
         <Route path="/categories" element={<Category />} />
         
-        {/* Dashboard-ka oo admin keliya geli karo */}
+        {/* Admin Routes (Dashboard) */}
         <Route path="/dashboard" element={
           <ProtectedRoute adminOnly={true}>
             <Dashboard />
